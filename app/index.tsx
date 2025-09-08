@@ -1,6 +1,6 @@
 import "react-native";
 import HookTestComponentUseMemo from "./src/components/HookTestComponentUseMemo";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -10,7 +10,7 @@ import {
 import HookTestComponentUseCallback from "./src/components/HookTestComponentUseCallback";
 import { useAppState, useBackHandler } from "@react-native-community/hooks";
 import { useIsFocused } from "@react-navigation/native";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 
 export default function HomeScreen() {
   const appState = useAppState();
@@ -24,7 +24,17 @@ export default function HomeScreen() {
   const router = useRouter();
 
   const isFocused = useIsFocused()
-  console.log("isFocused", isFocused);
+
+  useEffect(() => {
+    console.log("useEffect", isFocused);
+    if(isFocused) {
+        console.log("isFocused");
+    }
+  }, [isFocused]);
+
+  useFocusEffect(() => {
+    console.log("useFocusEffect");
+  },);
   return (
     <View style={styles.container}>
       <HookTestComponentUseMemo a={a} b={b} />
