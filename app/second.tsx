@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     flex: 0.3,
     alignItems: 'center',
   },
-  scrollToBottomButtonText: {
+  scrollToBottomBuonText: {
     color: 'white',
     fontSize: 14,
     fontWeight: 'bold',

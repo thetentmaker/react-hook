@@ -2,6 +2,7 @@ import "react-native";
 import HookTestComponentUseMemo from "./src/components/HookTestComponentUseMemo";
 import { useEffect, useState } from "react";
 import {
+  AppState,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -15,6 +16,11 @@ import { useFocusEffect, useRouter } from "expo-router";
 export default function HomeScreen() {
   const appState = useAppState();
   console.log("appState", appState);
+  useEffect(() => {
+    AppState.addEventListener("change", (state) => {
+      console.log("appState", state);
+    });
+  }, []);
   useBackHandler(() => {
     console.log("backHandler");
     return true;
