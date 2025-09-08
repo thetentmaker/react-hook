@@ -7,8 +7,7 @@
 ## 목차
 1. [What is Hook?](#1-what-is-hook)
 2. [실무에서 자주 사용하는 Library Hook](#2-실무에서-자주-사용하는-library-hook)
-3. [커스텀 Hook 예제](#3-커스텀-hook-예제)
-4. [최적화를 위한 Memoization](#4-최적화를-위한-memoization)
+3. [최적화를 위한 Memoization](#4-최적화를-위한-memoization)
 
 ---
 
@@ -51,10 +50,7 @@ Hook은 React에서 **state**와 기타 **side effect**들을 다루기 위해 �
 ### useMount
 ---
 
-
-## 3. 클래스형 컴포넌트 -> 함수형 컴포넌트로 전환
-
-## 4. 최적화를 위한 Memoization
+## 3. 최적화를 위한 Memoization
 ### useMemo
 - 값을 메모이제이션하여 의존성 배열의 값이 변경될 때만 다시 계산
 - 비용이 큰 계산 작업을 최적화할 때 사용
