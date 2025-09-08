@@ -12,6 +12,8 @@ import HookTestComponentUseCallback from "./src/components/HookTestComponentUseC
 import { useAppState, useBackHandler } from "@react-native-community/hooks";
 import { useIsFocused } from "@react-navigation/native";
 import { useFocusEffect, useRouter } from "expo-router";
+import { useMount } from "@/hooks/useMount";
+import { useUnmount } from "@/hooks/useUnmount";
 
 export default function HomeScreen() {
   const appState = useAppState();
@@ -41,6 +43,7 @@ export default function HomeScreen() {
   useFocusEffect(() => {
     console.log("useFocusEffect");
   },);
+
   return (
     <View style={styles.container}>
       <HookTestComponentUseMemo a={a} b={b} />

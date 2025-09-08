@@ -1,6 +1,8 @@
 import React, { useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useMount } from '@/hooks/useMount';
+import { useUnmount } from '@/hooks/useUnmount';
 
 export default function SecondScreen() {
   const router = useRouter();
@@ -21,6 +23,15 @@ export default function SecondScreen() {
     });
   };
   
+
+  useMount(() => {
+    console.log("useMount");
+  });
+
+  useUnmount(() => {
+    console.log("useUnmount");
+  });
+
   return (
     <View style={styles.container}>
       <ScrollView 
