@@ -18,11 +18,6 @@ import { useUnmount } from "@/hooks/useUnmount";
 export default function HomeScreen() {
   const appState = useAppState();
   console.log("appState", appState);
-  useEffect(() => {
-    AppState.addEventListener("change", (state) => {
-      console.log("appState", state);
-    });
-  }, []);
   useBackHandler(() => {
     console.log("backHandler");
     return true;

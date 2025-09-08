@@ -111,14 +111,6 @@ export default HookTestComponentUseCallback;
   const appState = useAppState();
   console.log("appState", appState);
 ```
-
-```tsx
-  useEffect(() => {
-    AppState.addEventListener("change", (state) => {
-      console.log("appState", state);
-    });
-  }, []);
-```
 ### useRoute
 ```tsx
 router.push('/second');
