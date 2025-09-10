@@ -481,6 +481,300 @@ function UserCard({ userId }) {
 
 <br>
 
+# React Hook Dependencies
+## 왜 Primitive를 사용해야 할까?
+
+---
+
+## 📋 목차
+
+1. [문제 상황](#문제-상황)
+2. [React의 Dependencies 비교 원리](#react의-dependencies-비교-원리)
+3. [왜 깊은 복사를 하면 안 될까?](#왜-깊은-복사를-하면-안-될까)
+4. [올바른 해결책](#올바른-해결책)
+5. [useMemo 활용법](#usememo-활용법)
+6. [실전 팁](#실전-팁)
+
+---
+
+## 🚨 문제 상황
+
+### 예상과 다르게 동작하는 코드
+
+```tsx
+function UserProfile({ userData }) {
+  const userConfig = {
+    name: userData.name,
+    theme: 'dark',
+    notifications: true
+  };
+
+  useEffect(() => {
+    console.log('사용자 설정이 변경됨');
+    updateUserSettings(userConfig);
+  }, [userConfig]); // 🔥 매 렌더링마다 실행됨!
+
+  return <div>사용자: {userData.name}</div>;
+}
+```
+
+**문제점**: `userData.name`이 같아도 useEffect가 계속 실행됨
+
+---
+
+## ⚙️ React의 Dependencies 비교 원리
+
+### React는 얕은 비교(Shallow Comparison)를 사용
+
+```tsx
+// React 내부적으로 이렇게 동작
+function areHookInputsEqual(prevDeps, nextDeps) {
+  if (prevDeps === null || nextDeps === null) {
+    return false;
+  }
+
+  for (let i = 0; i < prevDeps.length; i++) {
+    if (Object.is(prevDeps[i], nextDeps[i])) {
+      continue;
+    }
+    return false;
+  }
+  return true;
+}
+```
+
+### Object.is()의 동작 방식
+
+```tsx
+// ✅ Primitive 값 - 값으로 비교
+Object.is(1, 1);           // true
+Object.is('hello', 'hello'); // true
+Object.is(true, true);     // true
+
+// ❌ 객체 - 참조로 비교
+const obj1 = { name: 'John' };
+const obj2 = { name: 'John' };
+Object.is(obj1, obj2);     // false (서로 다른 참조)
+Object.is(obj1, obj1);     // true (같은 참조)
+```
+
+---
+
+## 🤔 왜 깊은 복사를 하면 안 될까?
+
+### 1. 성능 문제
+
+```javascript
+// ❌ 매번 깊은 복사를 한다면?
+function deepEqual(obj1, obj2) {
+  // 모든 속성을 재귀적으로 비교
+  // 큰 객체의 경우 매우 느림
+}
+
+// 렌더링할 때마다 이런 비교가 실행된다면?
+// 📊 성능 저하 심각!
+```
+
+### 2. 복잡성 증가
+
+- 중첩된 객체 처리
+- 순환 참조 처리  
+- 함수, Date, RegExp 등 특수 객체 처리
+- 배열과 객체의 혼합 구조
+
+### 3. 예측 불가능한 동작
+
+```tsx
+const config = {
+  settings: {
+    theme: 'dark',
+    user: userData // 🔥 외부에서 변경 가능
+  }
+};
+
+// deepEqual로 비교해도
+// userData가 mutable하면 예측 불가능
+```
+
+### 4. React의 설계 철학과 맞지 않음
+
+- React는 **불변성(Immutability)** 원칙을 따름
+- 빠른 비교를 통한 성능 최적화가 목표
+- 단순하고 예측 가능한 동작
+
+---
+
+## ✅ 올바른 해결책
+
+### 1. Primitive 값 사용
+
+```tsx
+// ❌ 객체 전체를 dependency에
+function UserProfile({ userData }) {
+  useEffect(() => {
+    updateUserSettings(userData);
+  }, [userData]); // 매번 실행됨
+}
+
+// ✅ 필요한 primitive 값만
+function UserProfile({ userData }) {
+  useEffect(() => {
+    updateUserSettings({
+      name: userData.name,
+      email: userData.email
+    });
+  }, [userData.name, userData.email]); // 값이 실제로 변할 때만 실행
+}
+```
+
+### 2. 구조분해할당 활용
+
+```tsx
+function UserProfile({ userData }) {
+  const { name, email, age } = userData;
+
+  useEffect(() => {
+    console.log('사용자 정보 변경:', { name, email, age });
+  }, [name, email, age]); // 명확하고 안전함
+}
+```
+
+---
+
+## 🎯 useMemo 활용법
+
+### 객체를 dependency로 사용하고 싶다면?
+
+```tsx
+function DataTable({ filters, sorting }) {
+  // ✅ useMemo로 안정적인 객체 생성
+  const queryConfig = useMemo(() => ({
+    filters: {
+      category: filters.category,
+      price: filters.price
+    },
+    sort: {
+      field: sorting.field,
+      order: sorting.order
+    },
+    limit: 20
+  }), [
+    filters.category,    // primitive
+    filters.price,       // primitive  
+    sorting.field,       // primitive
+    sorting.order        // primitive
+  ]);
+
+  useEffect(() => {
+    fetchData(queryConfig);
+  }, [queryConfig]); // 이제 안전함!
+}
+```
+
+### useMemo vs 직접 primitive 사용
+
+```javascript
+// 방법 1: useMemo 사용
+const config = useMemo(() => ({
+  apiKey: apiKey,
+  timeout: timeout  
+}), [apiKey, timeout]);
+
+useEffect(() => {
+  makeRequest(config);
+}, [config]);
+
+// 방법 2: 직접 primitive 사용 (권장)
+useEffect(() => {
+  const config = { apiKey, timeout };
+  makeRequest(config);
+}, [apiKey, timeout]); // 더 간단하고 명확함
+```
+
+---
+
+### 2. 객체 props 처리
+
+```tsx
+// ❌ 전체 객체
+function MyComponent({ user, settings }) {
+  useEffect(() => {
+    // ...
+  }, [user, settings]);
+}
+
+// ✅ 필요한 값만 추출
+function MyComponent({ user, settings }) {
+  const { user: { id, name }, settings: { theme, lang } } = props;
+  
+  useEffect(() => {
+    // ...
+  }, [id, name, theme, lang]);
+}
+```
+
+### 3. 커스텀 훅 활용
+
+```tsx
+// 재사용 가능한 로직을 커스텀 훅으로
+function useUserData(userId, includeProfile = false) {
+  const [userData, setUserData] = useState(null);
+  
+  useEffect(() => {
+    fetchUserData(userId, includeProfile);
+  }, [userId, includeProfile]); // primitive 값들만
+  
+  return userData;
+}
+```
+
+---
+
+## 📝 정리
+
+### 핵심 원칙
+
+1. **Primitive 값 사용**: 가장 안전하고 예측 가능
+2. **얕은 비교 이해**: React가 `Object.is()`로 비교함을 기억
+3. **불변성 유지**: 객체를 직접 수정하지 말고 새로 생성
+4. **useMemo 활용**: 복잡한 객체가 필요한 경우에만 사용
+
+### 성능과 안정성을 모두 잡는 방법
+
+```tsx
+// 🎯 Best Practice
+function OptimizedComponent({ data }) {
+  const { id, name, status } = data;
+  
+  const expensiveConfig = useMemo(() => ({
+    // 복잡한 계산이나 변환
+    processedData: processData(data),
+    settings: getSettings(id)
+  }), [id, name, status]); // primitive dependencies
+  
+  useEffect(() => {
+    updateComponent(expensiveConfig);
+  }, [expensiveConfig]);
+  
+  return <Text>{name}</Text>;
+}
+```
+
+---
+
+## ❓ Q&A
+
+**Q: 항상 primitive만 사용해야 하나요?**  
+A: 대부분의 경우 그렇습니다. 객체가 꼭 필요하다면 useMemo를 활용하세요.
+
+**Q: 성능상 차이가 얼마나 날까요?**  
+A: 작은 컴포넌트에서는 미미하지만, 복잡한 앱에서는 상당한 차이가 납니다.
+
+**Q: 기존 코드를 어떻게 리팩토링할까요?**  
+A: ESLint 규칙을 켜서 경고를 확인하고, 점진적으로 개선하세요.
+
+<br>
+
 ## 🔧 React.memo - 컴포넌트 메모이제이션
 
 **React.memo는 Hook은 아니지만 Hook과 함께 사용하는 중요한 최적화 도구입니다.**
@@ -491,7 +785,7 @@ function UserCard({ userId }) {
 - 함수형 컴포넌트의 `PureComponent` 역할
 
 ### 사용법
-```javascript
+```tsx
 // 기본 사용법
 const MyComponent = React.memo(function MyComponent({ name }) {
   return <Text>Hello {name}</Text>;
@@ -512,7 +806,7 @@ const MyComponent = React.memo(({ name, age }) => {
 ```
 
 ### Hook과의 조합 패턴
-```javascript
+```tsx
 import React, { useState, useCallback, useMemo } from 'react';
 
 // 자식 컴포넌트를 memo로 최적화
