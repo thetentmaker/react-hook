@@ -205,3 +205,431 @@ export const useUnmount = (callback: () => void) => {
   }, []);
 };
 ```
+<br><br>
+
+# Hook 의 이해
+
+## React Hook이란?
+
+**Hook은 컴포넌트에서 다양한 React 기능을 사용할 수 있게 해주는 특별한 함수입니다.**
+
+### Hook의 특징
+- 함수명이 `use`로 시작 (useState, useEffect, useContext 등)
+- 함수형 컴포넌트와 다른 Hook 내부에서만 호출 가능
+- 내장된 Hook을 이용하거나 결합하여 커스텀 Hook 생성 가능
+- React 16.8부터 도입
+
+## 📈 Hook이 등장한 이유
+
+### 1. **클래스 컴포넌트의 복잡성 문제**
+```ts
+// 클래스 컴포넌트 - 복잡하고 장황함
+class Counter extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { count: 0 };
+    this.handleClick = this.handleClick.bind(this);
+  }
+
+  handleClick() {
+    this.setState({ count: this.state.count + 1 });
+  }
+
+  render() {
+    return (
+      <View>
+        <Text>{this.state.count}</Text>
+        <TouchableOpacity onPress={this.handleClick}>
+          <Text>증가</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+}
+```
+
+### 2. **로직 재사용의 어려움**
+- HOC(Higher-Order Components)와 Render Props 패턴의 복잡함
+- "Wrapper Hell" 문제 발생
+- 컴포넌트 간 상태 로직 공유의 어려움
+
+### 3. **생명주기 메서드의 한계**
+- 관련 있는 코드가 여러 생명주기 메서드에 분산됨
+- 관련 없는 로직이 같은 생명주기 메서드에 섞임
+- Effect는 외부 시스템과의 동기화를 위한 "탈출구" 개념으로 재정의됨
+
+## Class Component vs Function Component
+
+### Class Component (과거)
+
+**장점:**
+- 상태 관리 가능 (this.state)
+- 생명주기 메서드 사용 가능
+- 레퍼런스 메서드 정의 가능
+
+**단점:**
+- 코드가 길고 복잡함
+- this 바인딩 필요
+- 번들 크기가 큼
+- 최적화가 어려움
+- 테스트가 복잡함
+
+```javascript
+class UserProfile extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      user: null,
+      loading: true,
+      error: null
+    };
+  }
+
+  async componentDidMount() {
+    try {
+      const response = await fetch(`/api/users/${this.props.userId}`);
+      const user = await response.json();
+      this.setState({ user, loading: false });
+    } catch (error) {
+      this.setState({ error, loading: false });
+    }
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.userId !== this.props.userId) {
+      this.fetchUser();
+    }
+  }
+
+  render() {
+    const { user, loading, error } = this.state;
+    
+    if (loading) return <Text>로딩 중...</Text>;
+    if (error) return <Text>오류 발생: {error.message}</Text>;
+    
+    return (
+      <View>
+        <Text>{user.name}</Text>
+        <Text>{user.email}</Text>
+      </View>
+    );
+  }
+}
+```
+
+### Function Component + Hooks (현재)
+
+**장점:**
+- 코드가 간결하고 읽기 쉬움
+- 로직 재사용이 쉬움 (Custom Hook)
+- 성능 최적화가 쉬움
+- 테스트가 간단함
+- 번들 크기가 작음
+
+```javascript
+function UserProfile({ userId }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/users/${userId}`);
+        const userData = await response.json();
+        setUser(userData);
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, [userId]); // userId가 변경될 때만 실행
+
+  if (loading) return <Text>로딩 중...</Text>;
+  if (error) return <Text>오류 발생: {error.message}</Text>;
+
+  return (
+    <View>
+      <Text>{user.name}</Text>
+      <Text>{user.email}</Text>
+    </View>
+  );
+}
+```
+
+## Function Component가 주류가 된 이유
+
+### 1. **개발 생산성 향상**
+- 보일러플레이트 코드 대폭 감소
+- 직관적인 상태 관리
+- 함수형 프로그래밍 패러다임과 잘 맞음
+
+### 2. **로직 재사용성**
+```javascript
+// Custom Hook으로 로직 재사용
+function useUserData(userId) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // 사용자 데이터 페칭 로직
+  }, [userId]);
+
+  return { user, loading };
+}
+
+// 여러 컴포넌트에서 재사용 가능
+function UserProfile({ userId }) {
+  const { user, loading } = useUserData(userId);
+  // ...
+}
+
+function UserCard({ userId }) {
+  const { user, loading } = useUserData(userId);
+  // ...
+}
+```
+
+### 3. **성능 최적화**
+- React.memo로 쉬운 메모이제이션
+- useMemo, useCallback으로 정밀한 최적화
+- 컴파일러 최적화에 유리
+
+### 4. **React Native에서의 이점**
+- 모바일 앱의 성능이 중요 → Hook의 최적화 이점 극대화
+- Hot Reloading 시 상태 유지가 더 안정적
+
+## 🛠️ 주요 Hook 종류 (공식 분류)
+
+### State Hooks
+- **useState**: 직접 업데이트할 수 있는 상태 변수 선언
+- **useReducer**: Reducer 함수 내부의 업데이트 로직을 사용하여 상태 변수 선언
+
+### Context Hooks
+- **useContext**: Context를 읽고 구독
+
+### Ref Hooks
+- **useRef**: 렌더링에 사용되지 않는 정보 보유 (DOM 노드, Timeout ID 등)
+- **useImperativeHandle**: 컴포넌트에 노출되는 Ref를 커스텀 (드물게 사용)
+
+### Effect Hooks
+- **useEffect**: 컴포넌트를 외부 시스템에 연결하고 동기화
+- **useLayoutEffect**: 브라우저가 화면을 다시 그리기 전에 실행
+- **useInsertionEffect**: React가 DOM을 변경하기 전에 실행 (라이브러리용)
+
+### Performance Hooks
+- **useMemo**: 비용이 많이 드는 계산 결과를 캐시
+- **useCallback**: 함수 정의를 최적화된 컴포넌트에 전달하기 전에 캐시
+- **useTransition**: State 전환을 Non-Blocking으로 표시
+- **useDeferredValue**: UI의 중요하지 않은 부분 업데이트를 지연
+
+### Other Hooks (주로 라이브러리 작성자용)
+- **useDebugValue**: React 개발자 도구 레이블 커스텀
+- **useId**: 컴포넌트가 고유 ID를 자신과 연결
+- **useSyncExternalStore**: 컴포넌트가 외부 저장소를 구독
+- **useActionState**: 액션을 통해 State를 관리
+
+### React Native 특화 Hooks
+- **useColorScheme**: 다크모드 감지
+- **useDeviceOrientation**: 기기 방향 감지
+- **useFocusEffect**: 화면 포커스 시 실행
+
+## 📊 실제 프로젝트에서의 비교
+
+### 개발 시간
+- 클래스 컴포넌트: 평균 30% 더 많은 코드 작성 시간
+- 함수 컴포넌트 + Hook: 간결하고 빠른 개발
+
+### 유지보수성
+- Hook 기반: 로직별로 코드 분리 가능
+- 버그 발생률 감소
+- 코드 리뷰 효율성 증대
+
+### 성능
+- 번들 크기: 평균 15-20% 감소
+- 런타임 성능: 미미한 개선 (상황에 따라 다름)
+- 개발 도구 지원 향상
+
+## 🎯 결론
+
+### Function Component + Hook을 사용해야 하는 이유
+
+1. **React 팀의 공식 권장사항**
+   - 새로운 기능은 Hook 중심으로 개발
+   - 클래스 컴포넌트는 레거시 지원만
+
+2. **팀 개발 효율성**
+   - 일관된 코드 스타일
+   - 쉬운 코드 리뷰
+   - 빠른 온보딩
+
+3. **미래 호환성**
+   - React 18+ 새 기능들은 Hook 기반
+   - Concurrent Features 지원
+   - Server Components와의 호환성
+
+### 마이그레이션 전략
+- 새 컴포넌트는 모두 Hook 사용
+- 기존 클래스 컴포넌트는 점진적 마이그레이션
+- Custom Hook으로 공통 로직 추출
+
+<br>
+
+## 🔧 React.memo - 컴포넌트 메모이제이션
+
+**React.memo는 Hook은 아니지만 Hook과 함께 사용하는 중요한 최적화 도구입니다.**
+
+### React.memo란?
+- 고차 컴포넌트(HOC)로 컴포넌트를 감싸서 메모이제이션 제공
+- props가 변경되지 않으면 재렌더링을 건너뜀
+- 함수형 컴포넌트의 `PureComponent` 역할
+
+### 사용법
+```javascript
+// 기본 사용법
+const MyComponent = React.memo(function MyComponent({ name }) {
+  return <Text>Hello {name}</Text>;
+});
+
+// 화살표 함수와 함께
+const MyComponent = React.memo(({ name }) => {
+  return <Text>Hello {name}</Text>;
+});
+
+// 커스텀 비교 함수 사용
+const MyComponent = React.memo(({ name, age }) => {
+  return <Text>Hello {name}, {age}</Text>;
+}, (prevProps, nextProps) => {
+  // true를 반환하면 재렌더링 건너뜀
+  return prevProps.name === nextProps.name && prevProps.age === nextProps.age;
+});
+```
+
+### Hook과의 조합 패턴
+```javascript
+import React, { useState, useCallback, useMemo } from 'react';
+
+// 자식 컴포넌트를 memo로 최적화
+const ExpensiveChild = React.memo(({ data, onUpdate }) => {
+  console.log('ExpensiveChild 렌더링');
+  
+  return (
+    <View>
+      {data.map(item => (
+        <TouchableOpacity key={item.id} onPress={() => onUpdate(item.id)}>
+          <Text>{item.name}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+});
+
+// 부모 컴포넌트에서 useCallback과 useMemo 활용
+function ParentComponent() {
+  const [count, setCount] = useState(0);
+  const [items, setItems] = useState([
+    { id: 1, name: 'Item 1' },
+    { id: 2, name: 'Item 2' }
+  ]);
+
+  // useCallback으로 함수 메모이제이션
+  const handleUpdate = useCallback((id) => {
+    setItems(prev => prev.map(item => 
+      item.id === id ? { ...item, updated: true } : item
+    ));
+  }, []);
+
+  // useMemo로 데이터 메모이제이션
+  const expensiveData = useMemo(() => {
+    return items.filter(item => item.name.includes('Item'));
+  }, [items]);
+
+  return (
+    <View>
+      <TouchableOpacity onPress={() => setCount(count + 1)}>
+        <Text>Count: {count}</Text>
+      </TouchableOpacity>
+      
+      {/* memo + useCallback + useMemo 조합으로 최적화 */}
+      <ExpensiveChild 
+        data={expensiveData} 
+        onUpdate={handleUpdate} 
+      />
+    </View>
+  );
+}
+```
+
+### 언제 사용해야 할까?
+
+**사용하면 좋은 경우:**
+- 렌더링 비용이 높은 컴포넌트
+- 자주 렌더링되지만 props가 자주 변하지 않는 컴포넌트
+- 리스트의 아이템 컴포넌트
+- 복잡한 계산을 포함하는 컴포넌트
+
+**사용하지 않는 것이 좋은 경우:**
+- props가 자주 변하는 컴포넌트
+- 렌더링 비용이 낮은 간단한 컴포넌트
+- 항상 다른 props를 받는 컴포넌트
+
+### React Native에서의 활용
+```javascript
+// 리스트 아이템 최적화
+const ChatMessage = React.memo(({ message, user, timestamp }) => {
+  return (
+    <View style={styles.messageContainer}>
+      <Text style={styles.username}>{user.name}</Text>
+      <Text>{message}</Text>
+      <Text style={styles.timestamp}>{timestamp}</Text>
+    </View>
+  );
+});
+
+// FlatList와 함께 사용
+function ChatScreen() {
+  const [messages, setMessages] = useState([]);
+
+  const renderMessage = useCallback(({ item }) => (
+    <ChatMessage 
+      message={item.text}
+      user={item.user}
+      timestamp={item.timestamp}
+    />
+  ), []);
+
+  return (
+    <FlatList
+      data={messages}
+      renderItem={renderMessage}
+      keyExtractor={(item) => item.id}
+    />
+  );
+}
+```
+
+### 주의사항
+1. **과도한 사용 금지**: 모든 컴포넌트에 memo를 적용할 필요 없음
+2. **참조 동등성**: 객체나 함수 props는 useCallback, useMemo와 함께 사용
+3. **측정 후 적용**: 성능 문제가 실제로 있을 때만 적용
+4. **얕은 비교**: 기본적으로 얕은 비교만 수행 (필요시 커스텀 비교 함수 사용)
+
+## 실제 프로젝트에서의 비교
+
+### 개발 시간
+- 클래스 컴포넌트: 평균 30% 더 많은 코드 작성 시간
+- 함수 컴포넌트 + Hook: 간결하고 빠른 개발
+
+### 유지보수성
+- Hook 기반: 로직별로 코드 분리 가능
+- 버그 발생률 감소
+- 코드 리뷰 효율성 증대
+
+### 성능
+- 번들 크기: 평균 15-20% 감소
+- 런타임 성능: 미미한 개선 (상황에 따라 다름)
+- 개발 도구 지원 향상
