@@ -211,7 +211,9 @@ export const useUnmount = (callback: () => void) => {
 
 ## React Hook이란?
 
-**Hook은 컴포넌트에서 다양한 React 기능을 사용할 수 있게 해주는 특별한 함수입니다.**
+- Hook은 함수형 컴포넌트에서 React의 상태 관리, 생명주기, 그리고 다양한 기능들을 사용할 수 있게 해주는 특별한 함수입니다. 
+- 함수명이 'use'로 시작하며, 컴포넌트 로직을 재사용 가능한 형태로 분리할 수 있게 해줍니다.
+- React 16.8부터 도입되어 함수형 컴포넌트가 클래스 컴포넌트의 모든 기능을 사용할 수 있게 만든 핵심 기술입니다.
 
 ### Hook의 특징
 - 함수명이 `use`로 시작 (useState, useEffect, useContext 등)
